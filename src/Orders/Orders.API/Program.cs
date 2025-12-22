@@ -7,6 +7,8 @@ using Orders.API.Endpoints;
 using Orders.API.Middleware;
 using Orders.Application.Interfaces;
 using Orders.Application.Mappers;
+using Orders.Application.UseCases.AddOrder;
+using Orders.Application.UseCases.GetOrderStatusById;
 using Orders.Application.UseCases.ListOrders;
 
 namespace Orders.API
@@ -74,6 +76,8 @@ namespace Orders.API
             });
 
             builder.Services.AddScoped<IListOrdersRequestHandler, ListOrdersRequestHandler>();
+            builder.Services.AddScoped<IAddOrderRequestHandler, AddOrderRequestHandler>();
+            builder.Services.AddScoped<IGetOrderStatusByIdRequestHandler, GetOrderStatusByIdRequestHandler>();
             
             builder.Services.AddSingleton<IOrderMapper, OrderMapper>();
 

@@ -1,39 +1,36 @@
 using Domain.Entities;
+using Orders.Application.UseCases.AddOrder;
+using Orders.Application.UseCases.GetOrderStatusById;
 using Orders.Application.UseCases.ListOrders;
 
 namespace Orders.Application.Mappers
 {
     public class OrderMapper : IOrderMapper
     {
-        // public Work MapAddWorkRequestToEntity(AddWorkRequest request)
-        // {
-        //     return new Work(request.StudentId, request.AssignmentId);
-        // }
+        public Order MapAddWorkRequestToEntity(AddOrderRequest request)
+        {
+            return new Order(request.UserId, request.Amount, request.Description);
+        }
+        
+        public AddOrderResponse MapEntityToAddOrderResponse(Order order)
+        {
+            return new AddOrderResponse(
+                order.OrderId,
+                order.UserId,
+                order.Amount,
+                order.Description,
+                order.Status.ToString()
+            );
+        }
         //
-        // public AddWorkResponse MapEntityToAddWorkResponse(Work work)
-        // {
-        //     return new AddWorkResponse(
-        //         work.WorkId,
-        //         work.StudentId,
-        //         work.AssignmentId,
-        //         work.SubmissionTime,
-        //         work.Status.ToString()
-        //     );
-        // }
-        //
-        // public GetWorkByIdResponse MapEntityToGetWorkByIdResponse(Work work)
-        // {
-        //     return new GetWorkByIdResponse(
-        //         work.WorkId,
-        //         work.StudentId,
-        //         work.AssignmentId,
-        //         work.SubmissionTime,
-        //         work.FileId,
-        //         work.Status.ToString(),
-        //         work.ReportId,
-        //         work.PlagiarismFlag
-        //     );
-        // }
+        public GetOrderStatusByIdResponse MapEntityToGetWorkByIdResponse(Order order)
+        {
+            return new GetOrderStatusByIdResponse(
+                order.OrderId,
+                order.UserId,
+                order.Status.ToString()
+            );
+        }
         //
         // public AnalyzeWorkRequestDto MapEntityToAnalyzeWorkRequest(Work work)
         // {

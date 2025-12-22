@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Orders.Application.UseCases.AddOrder;
+using Orders.Application.UseCases.GetOrderStatusById;
 using Orders.Application.UseCases.ListOrders;
 
 namespace Orders.API.Endpoints
@@ -10,8 +12,8 @@ namespace Orders.API.Endpoints
             app.MapGroup("/")
                 .WithTags("Orders")
                 .MapGetOrders()
-                // .MapGetWorkById()
-                // .MapAddWork()
+                .MapGetOrderStatusById()
+                .MapAddOrder()
                 // .MapAttachFile()
                 // .MapAnalyzeWork()
                 // .MapGetReport()
@@ -35,33 +37,34 @@ namespace Orders.API.Endpoints
             return group;
         }
         
-        // private static RouteGroupBuilder MapGetWorkById(this RouteGroupBuilder group)
-        // {
-        //     group.MapGet("{workId:guid}", async (Guid workId, IGetWorkByIdRequestHandler handler) =>
-        //         {
-        //             GetWorkByIdResponse? response = await handler.HandleAsync(workId);
-        //             return response is not null ? Results.Ok(response) : Results.NotFound();
-        //         })
-        //         .WithName("GetWorkById")
-        //         .WithSummary("Get work by ID")
-        //         .WithDescription("Get detailed information about a specific work")
-        //         .WithOpenApi();
-        //     return group;
-        // }
+        private static RouteGroupBuilder MapAddOrder(this RouteGroupBuilder group)
+        {
+            group.MapPost("", async (AddOrderRequest request, IAddOrderRequestHandler handler) =>
+                {
+                    AddOrderResponse response = await handler.HandleAsync(request);
+                    return Results.Created($"/orders/{response.OrderId}", response);
+                })
+                .WithName("AddOrder")
+                .WithSummary("Add a new order")
+                .WithDescription("Create a new order and async message to Payments")
+                .WithOpenApi();
+            return group;
+        }
+        
+        private static RouteGroupBuilder MapGetOrderStatusById(this RouteGroupBuilder group)
+        {
+            group.MapGet("{orderId:guid}", async (Guid orderId, IGetOrderStatusByIdRequestHandler handler) =>
+                {
+                    GetOrderStatusByIdResponse? response = await handler.HandleAsync(orderId);
+                    return response is not null ? Results.Ok(response) : Results.NotFound();
+                })
+                .WithName("GetOrderStatusById")
+                .WithSummary("Get Order Status by ID")
+                .WithDescription("Get status of the specific order")
+                .WithOpenApi();
+            return group;
+        }
         //
-        // private static RouteGroupBuilder MapAddWork(this RouteGroupBuilder group)
-        // {
-        //     group.MapPost("", async (AddWorkRequest request, IAddWorkRequestHandler handler) =>
-        //         {
-        //             AddWorkResponse response = await handler.HandleAsync(request);
-        //             return Results.Created($"/works/{response.WorkId}", response);
-        //         })
-        //         .WithName("AddWork")
-        //         .WithSummary("Add a new work")
-        //         .WithDescription("Create a new work submission record")
-        //         .WithOpenApi();
-        //     return group;
-        // }
         //
         // private static RouteGroupBuilder MapAttachFile(this RouteGroupBuilder group)
         // {
