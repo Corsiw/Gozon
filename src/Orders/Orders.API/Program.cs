@@ -1,4 +1,13 @@
+using Domain.Entities;
+using Infrastructure.Data;
+using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Orders.API.Endpoints;
+using Orders.API.Middleware;
+using Orders.Application.Interfaces;
+using Orders.Application.Mappers;
+using Orders.Application.UseCases.ListOrders;
 
 namespace Orders.API
 {
@@ -26,11 +35,11 @@ namespace Orders.API
             });
             
             // Configure Sqlite in appsettings.json
-            // builder.Services.AddDbContext<OrdersDbContext>(options =>
-            // {
-            //     string? connectionString = builder.Configuration.GetConnectionString("OrdersDatabase");
-            //     options.UseSqlite(connectionString);
-            // });
+            builder.Services.AddDbContext<OrdersDbContext>(options =>
+            {
+                string? connectionString = builder.Configuration.GetConnectionString("OrdersDatabase");
+                options.UseSqlite(connectionString);
+            });
             
             // Retry Policy
             // builder.Services.AddHttpClient<IFileStorageClient, FileStorageClient>(client =>
@@ -57,12 +66,17 @@ namespace Orders.API
             //     // Operation timeout
             //     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(5));
             
-            // builder.Services.AddScoped<IRepository<Order>>(sp =>
-            // {
-            //     OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
-            //     EfRepository<Order> efRepo = new(dbContext);
-            //     return efRepo;
-            // });
+            builder.Services.AddScoped<IRepository<Order>>(sp =>
+            {
+                OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
+                EfRepository<Order> efRepo = new(dbContext);
+                return efRepo;
+            });
+
+            builder.Services.AddScoped<IListOrdersRequestHandler, ListOrdersRequestHandler>();
+            
+            builder.Services.AddSingleton<IOrderMapper, OrderMapper>();
+
 
             WebApplication app = builder.Build();
 
@@ -76,15 +90,16 @@ namespace Orders.API
                 });
             }
         
+            // TODO Enable middleware
             // app.UseMiddleware<ErrorHandlingMiddleware>();
             
-            // app.MapOrdersEndpoints();
+            app.MapOrdersEndpoints();
 
-            // using (IServiceScope scope = app.Services.CreateScope())
-            // { 
-            //     OrdersDbContext db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
-            //     db.Database.Migrate();   // создаёт orders.db и таблицы
-            // }
+            using (IServiceScope scope = app.Services.CreateScope())
+            { 
+                OrdersDbContext db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+                db.Database.Migrate();   // создаёт orders.db и таблицы
+            }
             
             app.Run();
         }
