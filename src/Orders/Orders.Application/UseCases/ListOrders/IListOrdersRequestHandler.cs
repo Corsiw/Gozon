@@ -2,6 +2,6 @@ namespace Orders.Application.UseCases.ListOrders
 {
     public interface IListOrdersRequestHandler
     {
-        Task<ListOrdersResponse> HandleAsync();
+        Task<ListOrdersResponse> HandleAsync(Guid userId);
     }
 }

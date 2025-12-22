@@ -4,11 +4,11 @@ using Orders.Application.Mappers;
 
 namespace Orders.Application.UseCases.AddOrder
 {
-    public class AddOrderRequestHandler(IRepository<Order> repository, IOrderMapper mapper) : IAddOrderRequestHandler
+    public class AddOrderRequestHandler(IOrderRepository repository, IOrderMapper mapper) : IAddOrderRequestHandler
     {
-        public async Task<AddOrderResponse> HandleAsync(AddOrderRequest request)
+        public async Task<AddOrderResponse> HandleAsync(Guid userId, AddOrderRequest request)
         {
-            Order order = mapper.MapAddWorkRequestToEntity(request);
+            Order order = mapper.MapAddWorkRequestToEntity(userId, request);
 
             await repository.AddAsync(order);
             

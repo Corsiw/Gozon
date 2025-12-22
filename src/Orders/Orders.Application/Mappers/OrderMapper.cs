@@ -7,9 +7,9 @@ namespace Orders.Application.Mappers
 {
     public class OrderMapper : IOrderMapper
     {
-        public Order MapAddWorkRequestToEntity(AddOrderRequest request)
+        public Order MapAddWorkRequestToEntity(Guid userId, AddOrderRequest request)
         {
-            return new Order(request.UserId, request.Amount, request.Description);
+            return new Order(userId, request.Amount, request.Description);
         }
         
         public AddOrderResponse MapEntityToAddOrderResponse(Order order)

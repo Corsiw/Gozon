@@ -27,7 +27,7 @@ namespace Orders.API
             {
                 c.SupportNonNullableReferenceTypes();
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
-
+                
                 // Указываем basePath, который будет отображаться в Swagger UI
                 c.AddServer(new OpenApiServer
                 {
@@ -68,10 +68,10 @@ namespace Orders.API
             //     // Operation timeout
             //     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(5));
             
-            builder.Services.AddScoped<IRepository<Order>>(sp =>
+            builder.Services.AddScoped<IOrderRepository>(sp =>
             {
                 OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
-                EfRepository<Order> efRepo = new(dbContext);
+                OrderRepository efRepo = new(dbContext);
                 return efRepo;
             });
 

@@ -4,12 +4,12 @@ using Orders.Application.Mappers;
 
 namespace Orders.Application.UseCases.GetOrderStatusById
 {
-    public class GetOrderStatusByIdRequestHandler(IRepository<Order> repository, IOrderMapper mapper)
+    public class GetOrderStatusByIdRequestHandler(IOrderRepository repository, IOrderMapper mapper)
         : IGetOrderStatusByIdRequestHandler
     {
-        public async Task<GetOrderStatusByIdResponse?> HandleAsync(Guid orderId)
+        public async Task<GetOrderStatusByIdResponse?> HandleAsync(Guid orderId, Guid userId)
         {
-            Order? order = await repository.GetAsync(orderId);
+            Order? order = await repository.GetByIdAsync(orderId, userId);
             return order == null ? null : mapper.MapEntityToGetWorkByIdResponse(order);
         }
     }

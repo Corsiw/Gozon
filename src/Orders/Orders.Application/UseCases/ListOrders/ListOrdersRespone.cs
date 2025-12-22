@@ -2,7 +2,7 @@ namespace Orders.Application.UseCases.ListOrders
 {
     public record ListOrdersResponseItem
     (
-        Guid Order,
+        Guid OrderId,
         Guid UserId,
         decimal Amount,
         string? Description,

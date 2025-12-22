@@ -7,7 +7,7 @@ namespace Orders.Application.Mappers
 {
     public interface IOrderMapper
     {
-        Order MapAddWorkRequestToEntity(AddOrderRequest request);
+        Order MapAddWorkRequestToEntity(Guid userId, AddOrderRequest request);
         AddOrderResponse MapEntityToAddOrderResponse(Order work);
         ListOrdersResponseItem MapEntityToListOrdersResponseItem(Order order);
         GetOrderStatusByIdResponse MapEntityToGetWorkByIdResponse(Order order);
