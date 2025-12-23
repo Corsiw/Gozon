@@ -8,7 +8,7 @@ namespace Orders.Application.UseCases.AddOrder
     {
         public async Task<AddOrderResponse> HandleAsync(Guid userId, AddOrderRequest request)
         {
-            Order order = mapper.MapAddWorkRequestToEntity(userId, request);
+            Order order = mapper.MapAddOrderRequestToEntity(userId, request);
 
             await repository.AddAsync(order);
             

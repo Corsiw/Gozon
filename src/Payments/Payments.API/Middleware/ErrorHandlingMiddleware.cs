@@ -1,4 +1,5 @@
 using Infrastructure.Exceptions;
+using Payments.Application.Exceptions;
 using Polly.Timeout;
 using System.Net;
 

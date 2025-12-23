@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Payments.Application.Exceptions;
 using Payments.Application.Interfaces;
 
 namespace Infrastructure.Repositories
@@ -10,7 +11,7 @@ namespace Infrastructure.Repositories
         public async Task AddAsync(BankAccount account, CancellationToken cancellationToken = default)
         {
             context.BankAccounts.Add(account);
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesAsync(cancellationToken);
         }
 
         public async Task<BankAccount?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -18,6 +19,18 @@ namespace Infrastructure.Repositories
             return await context.BankAccounts
                 .FirstOrDefaultAsync(o =>
                     o.UserId == userId, cancellationToken);
+        }
+        
+        public async Task SaveChangesAsync(CancellationToken ct)
+        {
+            try
+            {
+                await context.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw new ConcurrencyConflictException();
+            }
         }
     }
 

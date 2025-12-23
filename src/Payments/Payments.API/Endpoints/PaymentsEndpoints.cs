@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Payments.Application.UseCases.AddBankAccount;
+using Payments.Application.UseCases.CreditBankAccount;
+using Payments.Application.UseCases.GetBalanceByUserId;
 
 namespace Payments.API.Endpoints
 {
@@ -9,39 +11,23 @@ namespace Payments.API.Endpoints
         {
             app.MapGroup("/")
                 .WithTags("BankAccounts")
-                .MapAddOrder()
-                // .MapGetOrders()
-                // .MapGetOrderStatusById()
+                .MapAddBankAccount()
+                .MapGetBankAccountBalanceByUserId()
+                .MapCreditBankAccount()
                 ;
 
             return app;
         }
 
-        // private static RouteGroupBuilder MapGetOrders(this RouteGroupBuilder group)
-        // {
-        //     group.MapGet("", async (
-        //             [FromHeader(Name = "X-User-Id")] Guid userId,
-        //             IListOrdersRequestHandler handler) =>
-        //         {
-        //             ListOrdersResponse response = await handler.HandleAsync(userId);
-        //             return Results.Ok(response);
-        //         })
-        //         .WithName("GetOrders")
-        //         .WithSummary("Get all orders")
-        //         .WithDescription("Get all orders for current user")
-        //         .WithOpenApi();
-        //
-        //     return group;
-        // }
-        
-        private static RouteGroupBuilder MapAddOrder(this RouteGroupBuilder group)
+        private static RouteGroupBuilder MapAddBankAccount(this RouteGroupBuilder group)
         {
-            group.MapPost("", async (
+            group.MapPost("/create", async (
                     [FromHeader(Name = "X-User-Id")] Guid userId,
+                    CancellationToken ct,
                     IAddBankAccountRequestHandler handler) =>
                 {
-                    AddBankAccountResponse response = await handler.HandleAsync(userId);
-                    return Results.Created($"/bankAccounts/{response.UserId}", response);
+                    AddBankAccountResponse response = await handler.HandleAsync(userId, ct);
+                    return Results.Created("/payments/", response);
                 })
                 .WithName("AddBankAccount")
                 .WithSummary("Add a new Bank Account")
@@ -51,27 +37,45 @@ namespace Payments.API.Endpoints
             return group;
         }
 
-        
-        // private static RouteGroupBuilder MapGetOrderStatusById(this RouteGroupBuilder group)
-        // {
-        //     group.MapGet("{orderId:guid}", async (
-        //             [FromHeader(Name = "X-User-Id")] Guid userId,
-        //             Guid orderId,
-        //             IGetOrderStatusByIdRequestHandler handler) =>
-        //         {
-        //             GetOrderStatusByIdResponse? response =
-        //                 await handler.HandleAsync(orderId, userId);
-        //
-        //             return response is not null
-        //                 ? Results.Ok(response)
-        //                 : Results.NotFound();
-        //         })
-        //         .WithName("GetOrderStatusById")
-        //         .WithSummary("Get Order Status by ID")
-        //         .WithDescription("Get status of the specific order for current user")
-        //         .WithOpenApi();
-        //
-        //     return group;
-        // }
+
+        private static RouteGroupBuilder MapGetBankAccountBalanceByUserId(this RouteGroupBuilder group)
+        {
+            group.MapGet("/balance", async (
+                    [FromHeader(Name = "X-User-Id")] Guid userId,
+                    IGetBankAccountBalanceByUserIdRequestHandler handler) =>
+                {
+                    GetBankAccountBalanceByUserIdResponse? response =
+                        await handler.HandleAsync(userId);
+
+                    return response is not null
+                        ? Results.Ok(response)
+                        : Results.NotFound();
+                })
+                .WithName("GetBankAccountBalanceByUserId")
+                .WithSummary("Get Bank Account Balance by UserID")
+                .WithDescription("Get balance of the Bank Account for current user")
+                .WithOpenApi();
+
+            return group;
+        }
+
+        private static RouteGroupBuilder MapCreditBankAccount(this RouteGroupBuilder group)
+        {
+            group.MapPost("topup", async (
+                    [FromHeader(Name = "X-User-Id")] Guid userId,
+                    CreditBankAccountRequest request,
+                    CancellationToken ct,
+                    ICreditBankAccountRequestHandler handler) =>
+                {
+                    CreditBankAccountResponse response = await handler.HandleAsync(userId, request, ct);
+                    return Results.Ok(response);
+                })
+                .WithName("CreditBankAccount")
+                .WithSummary("Add amount to Bank Account")
+                .WithDescription("Topping up a Bank Account for current user")
+                .WithOpenApi();
+
+            return group;
+        }
     }
 }

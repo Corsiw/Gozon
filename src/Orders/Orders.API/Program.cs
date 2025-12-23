@@ -1,10 +1,8 @@
-using Domain.Entities;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Orders.API.Endpoints;
-using Orders.API.Middleware;
 using Orders.Application.Interfaces;
 using Orders.Application.Mappers;
 using Orders.Application.UseCases.AddOrder;

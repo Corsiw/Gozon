@@ -8,17 +8,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Clients\" />
-      <Folder Include="DTO\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Payments.Application\Payments.Application.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.22" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.22" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Kafka\" />
     </ItemGroup>
 
 </Project>

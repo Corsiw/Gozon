@@ -10,7 +10,7 @@ namespace Orders.Application.UseCases.GetOrderStatusById
         public async Task<GetOrderStatusByIdResponse?> HandleAsync(Guid orderId, Guid userId)
         {
             Order? order = await repository.GetByIdAsync(orderId, userId);
-            return order == null ? null : mapper.MapEntityToGetWorkByIdResponse(order);
+            return order == null ? null : mapper.MapEntityToGetOrderByIdResponse(order);
         }
     }
 }

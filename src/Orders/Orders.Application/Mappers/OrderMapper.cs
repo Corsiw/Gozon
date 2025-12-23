@@ -7,7 +7,7 @@ namespace Orders.Application.Mappers
 {
     public class OrderMapper : IOrderMapper
     {
-        public Order MapAddWorkRequestToEntity(Guid userId, AddOrderRequest request)
+        public Order MapAddOrderRequestToEntity(Guid userId, AddOrderRequest request)
         {
             return new Order(userId, request.Amount, request.Description);
         }
@@ -23,7 +23,7 @@ namespace Orders.Application.Mappers
             );
         }
         //
-        public GetOrderStatusByIdResponse MapEntityToGetWorkByIdResponse(Order order)
+        public GetOrderStatusByIdResponse MapEntityToGetOrderByIdResponse(Order order)
         {
             return new GetOrderStatusByIdResponse(
                 order.OrderId,

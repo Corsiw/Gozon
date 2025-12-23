@@ -1,7 +1,4 @@
-namespace Infrastructure.Exceptions
+namespace Payments.Application.Exceptions
 {
-    public class ValidationException(IDictionary<string, string[]> errors) : Exception("Validation failed")
-    {
-        public IDictionary<string, string[]> Errors { get; } = errors;
-    }
+    public class ValidationException(string? message = null) : Exception(message);
 }

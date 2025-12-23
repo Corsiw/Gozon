@@ -7,6 +7,8 @@ using Payments.API.Middleware;
 using Payments.Application.Interfaces;
 using Payments.Application.Mappers;
 using Payments.Application.UseCases.AddBankAccount;
+using Payments.Application.UseCases.CreditBankAccount;
+using Payments.Application.UseCases.GetBalanceByUserId;
 
 namespace Payments.API
 {
@@ -80,8 +82,8 @@ namespace Payments.API
             });
 
             builder.Services.AddScoped<IAddBankAccountRequestHandler, AddBankAccountRequestHandler>();
-            // builder.Services.AddScoped<IListOrdersRequestHandler, ListOrdersRequestHandler>();
-            // builder.Services.AddScoped<IGetOrderStatusByIdRequestHandler, GetOrderStatusByIdRequestHandler>();
+            builder.Services.AddScoped<IGetBankAccountBalanceByUserIdRequestHandler, GetBankAccountBalanceByUserIdRequestHandler>();
+            builder.Services.AddScoped<ICreditBankAccountRequestHandler, CreditBankAccountRequestHandler>();
             
             builder.Services.AddSingleton<IBankAccountMapper, BankAccountMapper>();
             

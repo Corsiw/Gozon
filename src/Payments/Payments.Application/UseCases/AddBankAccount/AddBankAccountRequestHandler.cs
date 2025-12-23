@@ -1,6 +1,6 @@
 using Domain.Entities;
 using Domain.Exceptions;
-using Infrastructure.Exceptions;
+using Payments.Application.Exceptions;
 using Payments.Application.Interfaces;
 using Payments.Application.Mappers;
 
@@ -16,10 +16,10 @@ namespace Payments.Application.UseCases.AddBankAccount
                 throw new ConflictException($"Account for user {userId} already exists");
             }
 
-            BankAccount account = mapper.MapAddWorkRequestToEntity(userId);
+            BankAccount account = mapper.MapAddBankAccountRequestToEntity(userId);
             await repository.AddAsync(account, ct);
             
-            return mapper.MapEntityToAddOrderResponse(account);
+            return mapper.MapEntityToAddBankAccountResponse(account);
         }
     }
 }
