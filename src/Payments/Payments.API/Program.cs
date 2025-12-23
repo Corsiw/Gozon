@@ -1,4 +1,12 @@
+using Infrastructure.Data;
+using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Payments.API.Endpoints;
+using Payments.API.Middleware;
+using Payments.Application.Interfaces;
+using Payments.Application.Mappers;
+using Payments.Application.UseCases.AddBankAccount;
 
 namespace Payments.API
 {
@@ -26,11 +34,11 @@ namespace Payments.API
             });
             
             // Configure Sqlite in appsettings.json
-            // builder.Services.AddDbContext<PaymentsDbContext>(options =>
-            // {
-            //     string? connectionString = builder.Configuration.GetConnectionString("PaymentsDatabase");
-            //     options.UseSqlite(connectionString);
-            // });
+            builder.Services.AddDbContext<PaymentsDbContext>(options =>
+            {
+                string? connectionString = builder.Configuration.GetConnectionString("PaymentsDatabase");
+                options.UseSqlite(connectionString);
+            });
             
             // Retry Policy
             // builder.Services.AddHttpClient<IFileStorageClient, FileStorageClient>(client =>
@@ -64,6 +72,19 @@ namespace Payments.API
             //     return efRepo;
             // });
 
+            builder.Services.AddScoped<IBankAccountRepository>(sp =>
+            {
+                PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
+                BankAccountRepository efRepo = new(dbContext);
+                return efRepo;
+            });
+
+            builder.Services.AddScoped<IAddBankAccountRequestHandler, AddBankAccountRequestHandler>();
+            // builder.Services.AddScoped<IListOrdersRequestHandler, ListOrdersRequestHandler>();
+            // builder.Services.AddScoped<IGetOrderStatusByIdRequestHandler, GetOrderStatusByIdRequestHandler>();
+            
+            builder.Services.AddSingleton<IBankAccountMapper, BankAccountMapper>();
+            
             WebApplication app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -76,15 +97,15 @@ namespace Payments.API
                 });
             }
         
-            // app.UseMiddleware<ErrorHandlingMiddleware>();
+            app.UseMiddleware<ErrorHandlingMiddleware>();
             
-            // app.MapPaymentsEndpoints();
+            app.MapPaymentsEndpoints();
 
-            // using (IServiceScope scope = app.Services.CreateScope())
-            // { 
-            //     PaymentsDbContext db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-            //     db.Database.Migrate();   // создаёт payments.db и таблицы
-            // }
+            using (IServiceScope scope = app.Services.CreateScope())
+            { 
+                PaymentsDbContext db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+                db.Database.Migrate();   // создаёт payments.db и таблицы
+            }
             
             app.Run();
         }
