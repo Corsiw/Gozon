@@ -1,6 +1,6 @@
 namespace Infrastructure.Inbox.Dto
 {
-    public record OrderDto(
+    public sealed record OrderDto(
         Guid OrderId,
         Guid UserId,
         decimal Amount

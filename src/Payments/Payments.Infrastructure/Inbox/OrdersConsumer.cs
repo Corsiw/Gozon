@@ -10,16 +10,16 @@ using Payments.Application.UseCases.ProcessOrder;
 
 namespace Infrastructure.Inbox
 {
-    public class PaymentsConsumer(
+    public class OrdersConsumer(
         IServiceProvider serviceProvider,
         IInboxDtoMapper mapper,
         IConsumer<Ignore, OrderDto?> consumer,
-        ILogger<PaymentsConsumer> logger)
+        ILogger<OrdersConsumer> logger)
         : Microsoft.Extensions.Hosting.BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation("PaymentsConsumer started.");
+            logger.LogInformation("OrdersConsumer started.");
             
             consumer.Subscribe("OrderCreated");
             logger.LogInformation("Subscribed to Kafka topic: OrderCreated");
@@ -94,9 +94,8 @@ namespace Infrastructure.Inbox
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing message {MessageId}", messageId);
+                    logger.LogError(ex, "Error processing message {MessageId}. Reason: {Reason}", messageId, ex.Message);
                     await unitOfWork.RollbackAsync(cancellationToken);
-                    // Продолжаем цикл, чтобы сервис не падал
                 }
 
                 // Небольшая пауза, чтобы избежать спама при ошибках

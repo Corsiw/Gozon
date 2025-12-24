@@ -1,8 +1,8 @@
 using Domain.Enums;
 
-namespace Orders.Application.Events
+namespace Infrastructure.KafkaConsumer.Dto
 {
-    public sealed record OrderStatusChangedEvent(
+    public sealed record PaymentDto(
         Guid OrderId,
         Guid UserId,
         decimal Amount,

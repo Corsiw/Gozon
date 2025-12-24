@@ -1,11 +1,19 @@
+using Confluent.Kafka;
 using Infrastructure.Data;
+using Infrastructure.KafkaConsumer;
+using Infrastructure.KafkaConsumer.Dto;
+using Infrastructure.KafkaConsumer.Mappers;
+using Infrastructure.Outbox;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Orders.API.Endpoints;
+using Orders.API.Middleware;
 using Orders.Application.Interfaces;
 using Orders.Application.Mappers;
 using Orders.Application.UseCases.AddOrder;
+using Orders.Application.UseCases.ChangeOrderStatus;
 using Orders.Application.UseCases.GetOrderStatusById;
 using Orders.Application.UseCases.ListOrders;
 
@@ -25,7 +33,7 @@ namespace Orders.API
             {
                 c.SupportNonNullableReferenceTypes();
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Orders API", Version = "v1" });
-                
+
                 // Указываем basePath, который будет отображаться в Swagger UI
                 c.AddServer(new OpenApiServer
                 {
@@ -33,52 +41,87 @@ namespace Orders.API
                     Description = "Access via API Gateway"
                 });
             });
-            
+
             // Configure Sqlite in appsettings.json
             builder.Services.AddDbContext<OrdersDbContext>(options =>
             {
                 string? connectionString = builder.Configuration.GetConnectionString("OrdersDatabase");
                 options.UseSqlite(connectionString);
             });
-            
-            // Retry Policy
-            // builder.Services.AddHttpClient<IFileStorageClient, FileStorageClient>(client =>
-            //     {
-            //         client.BaseAddress = new Uri("http://filestorage.api:8082");
-            //         client.Timeout = TimeSpan.FromSeconds(10);
-            //     })
-            //     // Retry for transient errors (HTTP 5xx, network failure)
-            //     .AddPolicyHandler(HttpPolicyExtensions
-            //         .HandleTransientHttpError()
-            //         .WaitAndRetryAsync(
-            //             retryCount: 3,
-            //             sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(200 * attempt)
-            //         )
-            //     )
-            //     // Circuit breaker to stop flooding a failing service
-            //     .AddPolicyHandler(HttpPolicyExtensions
-            //         .HandleTransientHttpError()
-            //         .CircuitBreakerAsync(
-            //             handledEventsAllowedBeforeBreaking: 5,
-            //             durationOfBreak: TimeSpan.FromSeconds(20)
-            //         )
-            //     )
-            //     // Operation timeout
-            //     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(5));
-            
+
             builder.Services.AddScoped<IOrderRepository>(sp =>
             {
                 OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
                 OrderRepository efRepo = new(dbContext);
                 return efRepo;
             });
+            builder.Services.AddScoped<IOutboxRepository>(sp =>
+            {
+                OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
+                OutboxRepository efRepo = new(dbContext);
+                return efRepo;
+            });
+            builder.Services.AddScoped<IUnitOfWork>(sp =>
+            {
+                OrdersDbContext dbContext = sp.GetRequiredService<OrdersDbContext>();
+                EfUnitOfWork efuow = new(dbContext);
+                return efuow;
+            });
 
             builder.Services.AddScoped<IListOrdersRequestHandler, ListOrdersRequestHandler>();
             builder.Services.AddScoped<IAddOrderRequestHandler, AddOrderRequestHandler>();
             builder.Services.AddScoped<IGetOrderStatusByIdRequestHandler, GetOrderStatusByIdRequestHandler>();
-            
+            builder.Services.AddScoped<IChangeOrderStatusRequestHandler, ChangeOrderStatusRequestHandler>();
+
             builder.Services.AddSingleton<IOrderMapper, OrderMapper>();
 
+            // Kafka
+            builder.Services.Configure<KafkaProducerOptions>(
+                builder.Configuration.GetSection("Kafka:Producer"));
+            builder.Services.AddSingleton<IProducer<Guid, string>>(sp =>
+            {
+                KafkaProducerOptions options = sp.GetRequiredService<IOptions<KafkaProducerOptions>>().Value;
+
+                ProducerConfig config = new()
+                {
+                    BootstrapServers = options.BootstrapServers,
+                    EnableIdempotence = true,
+                    Acks = Acks.All,
+                    MessageSendMaxRetries = int.MaxValue
+                };
+
+                return new ProducerBuilder<Guid, string>(config)
+                    .SetKeySerializer(new GuidSerializer())
+                    .SetValueSerializer(Serializers.Utf8)
+                    .Build();
+            });
+
+            builder.Services.Configure<PaymentsConsumerOptions>(
+                builder.Configuration.GetSection("Kafka:Consumers:Orders"));
+            builder.Services.AddSingleton<IConsumer<Ignore, PaymentDto?>>(sp =>
+            {
+                PaymentsConsumerOptions options = sp.GetRequiredService<IOptions<PaymentsConsumerOptions>>().Value;
+
+                ConsumerConfig config = new()
+                {
+                    BootstrapServers = options.BootstrapServers,
+                    GroupId = options.GroupId,
+                    AutoOffsetReset = AutoOffsetReset.Earliest,
+                    EnableAutoCommit = false,
+                    EnableAutoOffsetStore = false,
+                    IsolationLevel = IsolationLevel.ReadCommitted
+                };
+
+                return new ConsumerBuilder<Ignore, PaymentDto?>(config)
+                    .SetValueDeserializer(new JsonValueDeserializer<PaymentDto>())
+                    .Build();
+            });
+
+            builder.Services.AddSingleton<IConsumerDtoMapper, ConsumerDtoMapper>();
+            builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+
+            builder.Services.AddHostedService<OutboxPublisherService>();
+            builder.Services.AddHostedService<PaymentsConsumer>();
 
             WebApplication app = builder.Build();
 
@@ -91,18 +134,17 @@ namespace Orders.API
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Orders.API V1");
                 });
             }
-        
-            // TODO Enable middleware
-            // app.UseMiddleware<ErrorHandlingMiddleware>();
-            
+
+            app.UseMiddleware<ErrorHandlingMiddleware>();
+
             app.MapOrdersEndpoints();
 
             using (IServiceScope scope = app.Services.CreateScope())
-            { 
+            {
                 OrdersDbContext db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
-                db.Database.Migrate();   // создаёт orders.db и таблицы
+                db.Database.Migrate(); // создаёт orders.db и таблицы
             }
-            
+
             app.Run();
         }
     }

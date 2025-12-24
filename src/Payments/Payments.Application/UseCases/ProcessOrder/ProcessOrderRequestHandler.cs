@@ -75,7 +75,7 @@ namespace Payments.Application.UseCases.ProcessOrder
             }
 
             // ВСЕГДА публикуем событие
-            OrderStatusChangedEvent evt = new(
+            PaymentStatusChangedEvent evt = new(
                 OrderId: request.OrderId,
                 UserId: request.UserId,
                 Amount: amount,
@@ -83,8 +83,6 @@ namespace Payments.Application.UseCases.ProcessOrder
                 FailureReason: failureReason,
                 OccurredAtUtc: DateTime.UtcNow
             );
-            
-            Console.WriteLine(evt);
 
             await outboxRepository.AddAsync(
                 new OutboxMessage(

@@ -102,11 +102,11 @@ namespace Payments.API
                     .Build();
             });
             
-            builder.Services.Configure<PaymentsConsumerOptions>(
-                builder.Configuration.GetSection("Kafka:Consumers:Payments"));
+            builder.Services.Configure<OrdersConsumerOptions>(
+                builder.Configuration.GetSection("Kafka:Consumers:Orders"));
             builder.Services.AddSingleton<IConsumer<Ignore, OrderDto?>>(sp =>
             {
-                PaymentsConsumerOptions options = sp.GetRequiredService<IOptions<PaymentsConsumerOptions>>().Value;
+                OrdersConsumerOptions options = sp.GetRequiredService<IOptions<OrdersConsumerOptions>>().Value;
 
                 ConsumerConfig config = new()
                 {
@@ -128,7 +128,7 @@ namespace Payments.API
             builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
             
             builder.Services.AddHostedService<OutboxPublisherService>();
-            builder.Services.AddHostedService<PaymentsConsumer>();
+            builder.Services.AddHostedService<OrdersConsumer>();
             
             WebApplication app = builder.Build();
 

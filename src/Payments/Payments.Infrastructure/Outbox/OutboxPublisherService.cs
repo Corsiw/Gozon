@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Payments.Application.Events;
 using Payments.Application.Interfaces;
 
 namespace Infrastructure.Outbox
 {
-    public class OutboxPublisherService(IServiceProvider serviceProvider)
+    public class OutboxPublisherService(IServiceProvider serviceProvider, ILogger<OutboxPublisherService> logger)
         : Microsoft.Extensions.Hosting.BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken ct)
@@ -33,6 +34,7 @@ namespace Infrastructure.Outbox
                     }
                     catch (InvalidOperationException)
                     {
+                        logger.LogError("Outbox message with id {MsgMessageId} was not published.", msg.MessageId);
                     }
                 }
 
