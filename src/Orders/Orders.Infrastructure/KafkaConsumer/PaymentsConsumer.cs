@@ -14,6 +14,9 @@ namespace Infrastructure.KafkaConsumer
         ILogger<PaymentsConsumer> logger)
         : Microsoft.Extensions.Hosting.BackgroundService
     {
+        private const int MaxRetryCount = 5;
+        private readonly Dictionary<TopicPartitionOffset, int> _retryCounts = new();
+
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             logger.LogInformation("PaymentsConsumer started.");
@@ -42,6 +45,7 @@ namespace Infrastructure.KafkaConsumer
 
                 if (result?.Message?.Value is null)
                 {
+                    consumer.Commit(result);
                     continue;
                 }
 
@@ -54,25 +58,44 @@ namespace Infrastructure.KafkaConsumer
                 Guid messageId = result.Message.Value.OrderId;
                 logger.LogInformation("Processing PaymentStatusChanged {OrderId} {UserId} {Status}.", messageId,  result.Message.Value.UserId, result.Message.Value.Status);
 
+                TopicPartitionOffset? tpo = result.TopicPartitionOffset;
                 try
                 {
                     await handler.HandleAsync(
                         mapper.MapPaymentDtoToChangeOrderStatusRequest(result.Message.Value),
                         cancellationToken);
-
-                    logger.LogInformation(
-                        "Committing offset {TopicPartitionOffset}",
-                        result.TopicPartitionOffset);
+                    _retryCounts.Remove(tpo);
+                    
                     consumer.Commit(result);
                     logger.LogInformation("Message {MessageId} processed successfully.", messageId);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing message {MessageId}. Reason: {Reason}", messageId, ex.Message);
-                }
+                    _retryCounts.TryGetValue(tpo, out int retries);
+                    retries++;
 
-                // Небольшая пауза, чтобы избежать спама при ошибках
-                await Task.Delay(100, cancellationToken);
+                    logger.LogError(ex,
+                        "Error processing message {MessageId}. Retry {Retry}/{MaxRetry}",
+                        messageId, retries, MaxRetryCount);
+
+                    if (retries >= MaxRetryCount)
+                    {
+                        // Отбрасываем сообщение
+                        consumer.Commit(result);
+                        _retryCounts.Remove(tpo);
+
+                        logger.LogWarning(
+                            "Message {MessageId} discarded after {MaxRetry} attempts.",
+                            messageId, MaxRetryCount);
+                    }
+                    else
+                    {
+                        _retryCounts[tpo] = retries;
+                        
+                        // Небольшая пауза, чтобы избежать спама при ошибках
+                        await Task.Delay(100, cancellationToken);
+                    }
+                }
             }
 
             // Закрываем consumer при остановке сервиса

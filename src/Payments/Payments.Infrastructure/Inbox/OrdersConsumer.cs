@@ -20,10 +20,10 @@ namespace Infrastructure.Inbox
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             logger.LogInformation("OrdersConsumer started.");
-            
+
             consumer.Subscribe("OrderCreated");
             logger.LogInformation("Subscribed to Kafka topic: OrderCreated");
-            
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 ConsumeResult<Ignore, OrderDto?>? result;
@@ -35,7 +35,6 @@ namespace Infrastructure.Inbox
                 catch (ConsumeException ex)
                 {
                     logger.LogError(ex, "Kafka consume error: {ErrorReason}", ex.Error.Reason);
-                    await Task.Delay(1000, cancellationToken);
                     continue;
                 }
                 catch (OperationCanceledException)
@@ -45,6 +44,7 @@ namespace Infrastructure.Inbox
 
                 if (result?.Message?.Value is null)
                 {
+                    consumer.Commit(result);
                     continue;
                 }
 
@@ -57,7 +57,8 @@ namespace Infrastructure.Inbox
                 IUnitOfWork unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
                 Guid messageId = result.Message.Value.OrderId;
-                logger.LogInformation("Processing order {OrderId} {UserId} {Amount}.", messageId,  result.Message.Value.UserId, result.Message.Value.Amount);
+                logger.LogInformation("Processing order {OrderId} {UserId} {Amount}.", messageId,
+                    result.Message.Value.UserId, result.Message.Value.Amount);
 
                 try
                 {
@@ -65,9 +66,8 @@ namespace Infrastructure.Inbox
 
                     InboxMessage? inbox = await repository.GetByIdAsync(messageId, cancellationToken);
 
-                    if (inbox != null && inbox.ProcessedAtUtc != null)
+                    if (inbox != null && inbox.IsProcessed)
                     {
-                        // Уже обработано, безопасно пропускаем
                         await unitOfWork.CommitAsync(cancellationToken);
                         consumer.Commit(result);
                         logger.LogInformation("Message {MessageId} already processed, skipping.", messageId);
@@ -81,25 +81,60 @@ namespace Infrastructure.Inbox
                         logger.LogInformation("New inbox message created: {MessageId}", messageId);
                     }
 
-                    PaymentStatus resultingStatus = await handler.HandleAsync(
-                        mapper.MapOrderDtoToProcessOrderRequest(result.Message.Value),
-                        cancellationToken);
+                    try
+                    {
+                        PaymentStatus resultingStatus = await handler.HandleAsync(
+                            mapper.MapOrderDtoToProcessOrderRequest(result.Message.Value),
+                            cancellationToken);
 
-                    inbox.MarkAsProcessed();
-                    await repository.SaveChangesAsync(cancellationToken);
-                    await unitOfWork.CommitAsync(cancellationToken);
+                        inbox.MarkAsProcessed();
 
-                    consumer.Commit(result);
-                    logger.LogInformation("Message {MessageId} processed successfully. Status: {ResultingStatus}", messageId, resultingStatus);
+                        await repository.SaveChangesAsync(cancellationToken);
+                        await unitOfWork.CommitAsync(cancellationToken);
+
+                        consumer.Commit(result);
+
+                        logger.LogInformation("Message {MessageId} processed successfully. Status: {ResultingStatus}",
+                            messageId, resultingStatus);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex,
+                            "Error processing message {MessageId}. Attempt {RetryCount}",
+                            messageId, inbox.RetryCount + 1);
+
+                        inbox.IncrementRetry(ex.Message);
+
+                        await repository.SaveChangesAsync(cancellationToken);
+                        await unitOfWork.CommitAsync(cancellationToken);
+
+                        if (!inbox.CanRetry)
+                        {
+                            // Превышен лимит - отбрасываем сообщение
+                            consumer.Commit(result);
+
+                            logger.LogWarning(
+                                "Message {MessageId} discarded after {RetryCount} attempts.",
+                                messageId, inbox.RetryCount);
+                        }
+                        else
+                        {
+                            // Retry - offset не коммитим
+                            logger.LogInformation(
+                                "Message {MessageId} will be retried. Retry {RetryCount}",
+                                messageId, inbox.RetryCount);
+                            
+                            // Небольшая пауза, чтобы избежать спама при ошибках
+                            await Task.Delay(100, cancellationToken);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing message {MessageId}. Reason: {Reason}", messageId, ex.Message);
+                    logger.LogError(ex, "Error processing message {MessageId}. Reason: {Reason}", messageId,
+                        ex.Message);
                     await unitOfWork.RollbackAsync(cancellationToken);
                 }
-
-                // Небольшая пауза, чтобы избежать спама при ошибках
-                await Task.Delay(100, cancellationToken);
             }
 
             // Закрываем consumer при остановке сервиса

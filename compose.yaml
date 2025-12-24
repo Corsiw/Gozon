@@ -1,65 +1,65 @@
 ﻿version: "3.9"
 
 services:
-#  gateway.api:
-#    image: gateway.api
-#    container_name: gateway.api
-#    build:
-#      context: .
-#      dockerfile: src/Gateway/Gateway.API/Dockerfile
-#    ports:
-#      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-#    environment:
-#      ASPNETCORE_URLS: "http://0.0.0.0:${GATEWAY_PORT}"
-#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-#    depends_on:
-#      orders.api:
-#        condition: service_started
-#      payments.api:
-#        condition: service_started
-#    networks:
-#      - backend
-#    restart: unless-stopped
-#
-#  orders.api:
-#    image: orders.api
-#    container_name: orders.api
-#    build:
-#      context: .
-#      dockerfile: src/Orders/Orders.API/Dockerfile
-#    expose:
-#      - "${WORKS_PORT}"
-#    environment:
-#      ASPNETCORE_URLS: "http://0.0.0.0:${WORKS_PORT}"
-#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-#    volumes:
-#      - works_data:/app/data/
-#    networks:
-#      - backend
-#    depends_on:
-#      - kafka:
-#          condition: service_started
-#    restart: unless-stopped
-#
-#  payments.api:
-#    image: payments.api
-#    container_name: payments.api
-#    build:
-#      context: .
-#      dockerfile: src/Payments/Payments.API/Dockerfile
-#    expose:
-#      - "${PAYMENTS_PORT}"
-#    environment:
-#      ASPNETCORE_URLS: "http://0.0.0.0:${PAYMENTS_PORT}"
-#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-#    volumes:
-#      - payments_data:/app/data/
-#    networks:
-#      - backend
-#    depends_on:
-#      - kafka:
-#          condition: service_started
-#    restart: unless-stopped
+  gateway-api:
+    image: gateway-api
+    container_name: gateway-api
+    build:
+      context: .
+      dockerfile: src/Gateway/Gateway.API/Dockerfile
+    ports:
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:${GATEWAY_PORT}"
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+    depends_on:
+      orders.api:
+        condition: service_started
+      payments.api:
+        condition: service_started
+    networks:
+      - backend
+    restart: unless-stopped
+
+  orders.api:
+    image: orders.api
+    container_name: orders.api
+    build:
+      context: .
+      dockerfile: src/Orders/Orders.API/Dockerfile
+    expose:
+      - "${ORDERS_PORT}"
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:${ORDERS_PORT}"
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+    volumes:
+      - orders_data:/app/data/
+    networks:
+      - backend
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  payments.api:
+    image: payments.api
+    container_name: payments.api
+    build:
+      context: .
+      dockerfile: src/Payments/Payments.API/Dockerfile
+    expose:
+      - "${PAYMENTS_PORT}"
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:${PAYMENTS_PORT}"
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+    volumes:
+      - payments_data:/app/data/
+    networks:
+      - backend
+    depends_on:
+      kafka:
+          condition: service_healthy
+    restart: unless-stopped
   
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -67,24 +67,35 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - ":2181"
+    networks:
+      - backend
     
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - ":9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 networks:
   backend:

@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payment.API", "src\Payments\Payments.API\Payments.API.csproj", "{0A353147-E453-4C4E-AF9C-FFAC9C787174}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payments.Infrastructure", "src\Payments\Payments.Infrastructure\Payments.Infrastructure.csproj", "{A863D2AA-0382-4CD9-8BF7-E5570D501DD0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payment.Infrastructure", "src\Payments\Payments.Infrastructure\Payments.Infrastructure.csproj", "{A863D2AA-0382-4CD9-8BF7-E5570D501DD0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payment.Domain", "src\Payments\Payments.Domain\Payments.Domain.csproj", "{CD5AEFA2-4FC0-4F1A-B4F7-6540FD82B8DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payments.Domain", "src\Payments\Payments.Domain\Payments.Domain.csproj", "{CD5AEFA2-4FC0-4F1A-B4F7-6540FD82B8DC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payments.Application", "src\Payments\Payments.Application\Payments.Application.csproj", "{34B62EAC-1514-48B8-B9F2-659336B2CDFC}"
 EndProject
@@ -17,6 +15,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orders.Application", "src\Orders\Orders.Application\Orders.Application.csproj", "{9B8F45F5-2D74-4555-808E-637ECDB00509}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gateway.API", "src\Gateway\Gateway.API\Gateway.API.csproj", "{12132CDB-DA90-4F24-BC85-158059DD4916}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Payments.API", "src\Payments\Payments.API\Payments.API.csproj", "{789AB7B7-C487-4A43-A974-EF4FAAB7711D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,5 +60,9 @@ Global
 		{12132CDB-DA90-4F24-BC85-158059DD4916}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12132CDB-DA90-4F24-BC85-158059DD4916}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12132CDB-DA90-4F24-BC85-158059DD4916}.Release|Any CPU.Build.0 = Release|Any CPU
+		{789AB7B7-C487-4A43-A974-EF4FAAB7711D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{789AB7B7-C487-4A43-A974-EF4FAAB7711D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{789AB7B7-C487-4A43-A974-EF4FAAB7711D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{789AB7B7-C487-4A43-A974-EF4FAAB7711D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
