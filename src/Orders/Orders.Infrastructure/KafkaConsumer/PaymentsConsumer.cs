@@ -60,6 +60,9 @@ namespace Infrastructure.KafkaConsumer
                         mapper.MapPaymentDtoToChangeOrderStatusRequest(result.Message.Value),
                         cancellationToken);
 
+                    logger.LogInformation(
+                        "Committing offset {TopicPartitionOffset}",
+                        result.TopicPartitionOffset);
                     consumer.Commit(result);
                     logger.LogInformation("Message {MessageId} processed successfully.", messageId);
                 }
