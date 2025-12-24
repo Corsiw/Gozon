@@ -1,4 +1,4 @@
-namespace Payments.Application.Events
+namespace Orders.Application.Events
 {
     public class InboxMessage(Guid messageId)
     {

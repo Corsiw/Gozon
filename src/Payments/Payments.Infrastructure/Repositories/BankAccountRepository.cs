@@ -10,8 +10,7 @@ namespace Infrastructure.Repositories
     {
         public async Task AddAsync(BankAccount account, CancellationToken cancellationToken = default)
         {
-            context.BankAccounts.Add(account);
-            await SaveChangesAsync(cancellationToken);
+            await context.BankAccounts.AddAsync(account, cancellationToken);
         }
 
         public async Task<BankAccount?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -29,7 +28,7 @@ namespace Infrastructure.Repositories
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                throw new ConcurrencyConflictException();
+                throw new ConcurrencyConflictException(ex.Message, ex);
             }
         }
     }

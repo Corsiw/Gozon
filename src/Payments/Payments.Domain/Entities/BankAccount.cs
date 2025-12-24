@@ -10,25 +10,35 @@ namespace Domain.Entities
 
         // CAS токен
         public int Version { get; private set; }
-        
+
         public void AddAmount(decimal amount)
         {
-            if (amount > 0 && decimal.MaxValue - Amount < amount)
+            if (amount <= 0)
             {
-                throw new OverflowException($"Adding {amount} would exceed decimal.MaxValue.");
+                throw new InsufficientFundsException("The operation was declined.");
             }
 
-            if (amount < 0 && decimal.MinValue - Amount > amount)
-            {
-                throw new OverflowException($"Adding {amount} would exceed decimal.MinValue.");
-            }
-            
             if (Amount + amount < 0)
             {
                 throw new InsufficientFundsException("The operation was declined due to insufficient funds.");
             }
-            
+
             Amount += amount;
+        }
+
+        public void SubtractAmount(decimal amount)
+        {
+            if (amount <= 0)
+            {
+                throw new InsufficientFundsException("The operation was declined.");
+            }
+
+            if (Amount - amount < 0)
+            {
+                throw new InsufficientFundsException("The operation was declined due to insufficient funds.");
+            }
+
+            Amount -= amount;
         }
     }
 }

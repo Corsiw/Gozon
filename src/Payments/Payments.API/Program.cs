@@ -1,6 +1,12 @@
+using Confluent.Kafka;
 using Infrastructure.Data;
+using Infrastructure.Inbox;
+using Infrastructure.Inbox.Dto;
+using Infrastructure.Inbox.Mappers;
+using Infrastructure.Outbox;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Payments.API.Endpoints;
 using Payments.API.Middleware;
@@ -9,6 +15,7 @@ using Payments.Application.Mappers;
 using Payments.Application.UseCases.AddBankAccount;
 using Payments.Application.UseCases.CreditBankAccount;
 using Payments.Application.UseCases.GetBalanceByUserId;
+using Payments.Application.UseCases.ProcessOrder;
 
 namespace Payments.API
 {
@@ -42,50 +49,86 @@ namespace Payments.API
                 options.UseSqlite(connectionString);
             });
             
-            // Retry Policy
-            // builder.Services.AddHttpClient<IFileStorageClient, FileStorageClient>(client =>
-            //     {
-            //         client.BaseAddress = new Uri("http://filestorage.api:8082");
-            //         client.Timeout = TimeSpan.FromSeconds(10);
-            //     })
-            //     // Retry for transient errors (HTTP 5xx, network failure)
-            //     .AddPolicyHandler(HttpPolicyExtensions
-            //         .HandleTransientHttpError()
-            //         .WaitAndRetryAsync(
-            //             retryCount: 3,
-            //             sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(200 * attempt)
-            //         )
-            //     )
-            //     // Circuit breaker to stop flooding a failing service
-            //     .AddPolicyHandler(HttpPolicyExtensions
-            //         .HandleTransientHttpError()
-            //         .CircuitBreakerAsync(
-            //             handledEventsAllowedBeforeBreaking: 5,
-            //             durationOfBreak: TimeSpan.FromSeconds(20)
-            //         )
-            //     )
-            //     // Operation timeout
-            //     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(5));
-            
-            // builder.Services.AddScoped<IRepository<Payment>>(sp =>
-            // {
-            //     PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
-            //     EfRepository<Payment> efRepo = new(dbContext);
-            //     return efRepo;
-            // });
-
             builder.Services.AddScoped<IBankAccountRepository>(sp =>
             {
                 PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
                 BankAccountRepository efRepo = new(dbContext);
                 return efRepo;
             });
+            builder.Services.AddScoped<IInboxRepository>(sp =>
+            {
+                PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
+                InboxRepository efRepo = new(dbContext);
+                return efRepo;
+            });
+            builder.Services.AddScoped<IOutboxRepository>(sp =>
+            {
+                PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
+                OutboxRepository efRepo = new(dbContext);
+                return efRepo;
+            });
+            builder.Services.AddScoped<IUnitOfWork>(sp =>
+            {
+                PaymentsDbContext dbContext = sp.GetRequiredService<PaymentsDbContext>();
+                EfUnitOfWork efuow = new(dbContext);
+                return efuow;
+            });
 
             builder.Services.AddScoped<IAddBankAccountRequestHandler, AddBankAccountRequestHandler>();
             builder.Services.AddScoped<IGetBankAccountBalanceByUserIdRequestHandler, GetBankAccountBalanceByUserIdRequestHandler>();
             builder.Services.AddScoped<ICreditBankAccountRequestHandler, CreditBankAccountRequestHandler>();
+            builder.Services.AddScoped<IProcessOrderRequestHandler, ProcessOrderRequestHandler>();
             
             builder.Services.AddSingleton<IBankAccountMapper, BankAccountMapper>();
+            
+            // Kafka
+            builder.Services.Configure<KafkaProducerOptions>(
+                builder.Configuration.GetSection("Kafka:Producer"));
+            builder.Services.AddSingleton<IProducer<Guid, string>>(sp =>
+            {
+                KafkaProducerOptions options = sp.GetRequiredService<IOptions<KafkaProducerOptions>>().Value;
+
+                ProducerConfig config = new()
+                {
+                    BootstrapServers = options.BootstrapServers,
+                    EnableIdempotence = true,
+                    Acks = Acks.All,
+                    MessageSendMaxRetries = int.MaxValue
+                };
+                
+                return new ProducerBuilder<Guid, string>(config)
+                    .SetKeySerializer(new GuidSerializer())
+                    .SetValueSerializer(Serializers.Utf8)
+                    .Build();
+            });
+            
+            builder.Services.Configure<PaymentsConsumerOptions>(
+                builder.Configuration.GetSection("Kafka:Consumers:Payments"));
+            builder.Services.AddSingleton<IConsumer<Ignore, OrderDto?>>(sp =>
+            {
+                PaymentsConsumerOptions options = sp.GetRequiredService<IOptions<PaymentsConsumerOptions>>().Value;
+
+                ConsumerConfig config = new()
+                {
+                    BootstrapServers = options.BootstrapServers,
+                    GroupId = options.GroupId,
+                    AutoOffsetReset = AutoOffsetReset.Earliest,
+
+                    EnableAutoCommit = false,
+                    EnableAutoOffsetStore = false,
+                    IsolationLevel = IsolationLevel.ReadCommitted
+                };
+
+                return new ConsumerBuilder<Ignore, OrderDto?>(config)
+                    .SetValueDeserializer(new JsonValueDeserializer<OrderDto>()!)
+                    .Build();
+            });
+
+            builder.Services.AddSingleton<IInboxDtoMapper, InboxDtoMapper>();
+            builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+            
+            builder.Services.AddHostedService<OutboxPublisherService>();
+            builder.Services.AddHostedService<PaymentsConsumer>();
             
             WebApplication app = builder.Build();
 

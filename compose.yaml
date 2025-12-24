@@ -1,86 +1,96 @@
 ﻿version: "3.9"
 
 services:
-  gateway.api:
-    image: gateway.api
-    container_name: gateway.api
-    build:
-      context: .
-      dockerfile: src/Gateway/Gateway.API/Dockerfile
+#  gateway.api:
+#    image: gateway.api
+#    container_name: gateway.api
+#    build:
+#      context: .
+#      dockerfile: src/Gateway/Gateway.API/Dockerfile
+#    ports:
+#      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+#    environment:
+#      ASPNETCORE_URLS: "http://0.0.0.0:${GATEWAY_PORT}"
+#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+#    depends_on:
+#      orders.api:
+#        condition: service_started
+#      payments.api:
+#        condition: service_started
+#    networks:
+#      - backend
+#    restart: unless-stopped
+#
+#  orders.api:
+#    image: orders.api
+#    container_name: orders.api
+#    build:
+#      context: .
+#      dockerfile: src/Orders/Orders.API/Dockerfile
+#    expose:
+#      - "${WORKS_PORT}"
+#    environment:
+#      ASPNETCORE_URLS: "http://0.0.0.0:${WORKS_PORT}"
+#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+#    volumes:
+#      - works_data:/app/data/
+#    networks:
+#      - backend
+#    depends_on:
+#      - kafka:
+#          condition: service_started
+#    restart: unless-stopped
+#
+#  payments.api:
+#    image: payments.api
+#    container_name: payments.api
+#    build:
+#      context: .
+#      dockerfile: src/Payments/Payments.API/Dockerfile
+#    expose:
+#      - "${PAYMENTS_PORT}"
+#    environment:
+#      ASPNETCORE_URLS: "http://0.0.0.0:${PAYMENTS_PORT}"
+#      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+#    volumes:
+#      - payments_data:/app/data/
+#    networks:
+#      - backend
+#    depends_on:
+#      - kafka:
+#          condition: service_started
+#    restart: unless-stopped
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-    environment:
-      ASPNETCORE_URLS: "http://0.0.0.0:${GATEWAY_PORT}"
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
+      - "2181:2181"
+    
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
     depends_on:
-      works.api:
-        condition: service_started
-      filestorage.api:
-        condition: service_started
-      analysis.api:
-        condition: service_started
-    networks:
-      - backend
-    restart: unless-stopped
-
-  works.api:
-    image: works.api
-    container_name: works.api
-    build:
-      context: .
-      dockerfile: src/Works/Works.API/Dockerfile
-    expose:
-      - "${WORKS_PORT}"
+      - zookeeper
+    ports:
+      - "9092:9092"
     environment:
-      ASPNETCORE_URLS: "http://0.0.0.0:${WORKS_PORT}"
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-    volumes:
-      - works_data:/app/data/
-    networks:
-      - backend
-    restart: unless-stopped
-
-  filestorage.api:
-    image: filestorage.api
-    container_name: filestorage.api
-    build:
-      context: .
-      dockerfile: src/FileStorage/FileStorage.API/Dockerfile
-    expose:
-      - "${FILESTORAGE_PORT}"
-    environment:
-      ASPNETCORE_URLS: "http://0.0.0.0:${FILESTORAGE_PORT}"
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-    volumes:
-      - files_data:/app/data/
-      - files_storage:/app/files/
-    networks:
-      - backend
-    restart: unless-stopped
-
-  analysis.api:
-    image: analysis.api
-    container_name: analysis.api
-    build:
-      context: .
-      dockerfile: src/Analysis/Analysis.API/Dockerfile
-    expose:
-      - "${ANALYSIS_PORT}"
-    environment:
-      ASPNETCORE_URLS: "http://0.0.0.0:${ANALYSIS_PORT}"
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT}"
-    volumes:
-      - analysis_data:/app/data/
-    networks:
-      - backend
-    restart: unless-stopped
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
 networks:
   backend:
     driver: bridge
 
 volumes:
-  works_data:
-  files_data:
-  files_storage:
-  analysis_data:
+  orders_data:
+  payments_data:
+

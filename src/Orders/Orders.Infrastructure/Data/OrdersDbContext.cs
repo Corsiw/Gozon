@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Orders.Application.Events;
 
 namespace Infrastructure.Data
 {

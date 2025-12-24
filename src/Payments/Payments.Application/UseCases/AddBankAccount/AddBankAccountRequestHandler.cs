@@ -18,6 +18,7 @@ namespace Payments.Application.UseCases.AddBankAccount
 
             BankAccount account = mapper.MapAddBankAccountRequestToEntity(userId);
             await repository.AddAsync(account, ct);
+            await repository.SaveChangesAsync(ct);
             
             return mapper.MapEntityToAddBankAccountResponse(account);
         }

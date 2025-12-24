@@ -1,12 +1,13 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Payments.Application.Events;
 
 namespace Infrastructure.Data
 {
     public class PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : DbContext(options)
     {
         public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
-        public DbSet<OutboxMessage> Messages => Set<OutboxMessage>();
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
         public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
