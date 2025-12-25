@@ -18,7 +18,7 @@ services:
       payments.api:
         condition: service_started
     networks:
-      - backend
+      - application
     restart: unless-stopped
 
   orders.api:
@@ -35,7 +35,7 @@ services:
     volumes:
       - orders_data:/app/data/
     networks:
-      - backend
+      - application
     depends_on:
       kafka:
         condition: service_healthy
@@ -55,7 +55,7 @@ services:
     volumes:
       - payments_data:/app/data/
     networks:
-      - backend
+      - application
     depends_on:
       kafka:
           condition: service_healthy
@@ -69,7 +69,9 @@ services:
     ports:
       - ":2181"
     networks:
-      - backend
+      - application
+    restart:
+      unless-stopped
     
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -90,15 +92,33 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     networks:
-      - backend
+      - application
     healthcheck:
       test: [ "CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092" ]
       interval: 10s
       timeout: 5s
       retries: 10
+    restart:
+      unless-stopped
+    
+  frontend:
+    image: frontend
+    container_name: frontend
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      gateway-api:
+        condition: service_started
+    networks:
+      - application
+    restart: unless-stopped
+
 
 networks:
-  backend:
+  application:
     driver: bridge
 
 volumes:

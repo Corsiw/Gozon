@@ -17,6 +17,17 @@ namespace Gateway.API
             builder.Services.AddReverseProxy()
                 .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("Frontend", policy =>
+                {
+                    policy
+                        .WithOrigins(builder.Configuration.GetValue<string>("AllowedOrigins") ?? string.Empty)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader();
+                });
+            });
+            
             WebApplication app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -32,6 +43,8 @@ namespace Gateway.API
             }
 
             app.UseAuthorization();
+            
+            app.UseCors("Frontend");
             
             app.MapReverseProxy();
             
