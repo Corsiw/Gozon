@@ -1,5 +1,4 @@
 using Domain.Entities;
-using Domain.Exceptions;
 using Payments.Application.Exceptions;
 using Payments.Application.Interfaces;
 using Payments.Application.Mappers;

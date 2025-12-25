@@ -1,4 +1,4 @@
-namespace Infrastructure.Exceptions
+namespace Orders.Application.Exceptions
 {
     public class ValidationException(IDictionary<string, string[]> errors) : Exception("Validation failed")
     {

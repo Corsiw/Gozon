@@ -1,10 +1,8 @@
-using Domain.Entities;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Payments.Application.Events;
 using Payments.Application.Exceptions;
 using Payments.Application.Interfaces;
-using System.Collections.Immutable;
 
 namespace Infrastructure.Repositories
 {

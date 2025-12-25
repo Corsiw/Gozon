@@ -24,6 +24,7 @@ namespace Domain.Entities
             }
 
             Amount += amount;
+            Version++;
         }
 
         public void SubtractAmount(decimal amount)
@@ -39,6 +40,7 @@ namespace Domain.Entities
             }
 
             Amount -= amount;
+            Version++;
         }
     }
 }

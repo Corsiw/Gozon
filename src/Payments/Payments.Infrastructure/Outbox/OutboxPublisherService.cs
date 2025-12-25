@@ -38,7 +38,7 @@ namespace Infrastructure.Outbox
                     }
                 }
 
-                await Task.Delay(10000, ct);
+                await Task.Delay(1000, ct);
             }
         }
     }

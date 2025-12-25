@@ -2,7 +2,6 @@ using Domain.Entities;
 using Payments.Application.Exceptions;
 using Payments.Application.Interfaces;
 using Payments.Application.Mappers;
-using Payments.Application.UseCases.AddBankAccount;
 
 namespace Payments.Application.UseCases.CreditBankAccount
 {
@@ -35,7 +34,7 @@ namespace Payments.Application.UseCases.CreditBankAccount
 
                     return mapper.MapEntityToCreditBankAccountResponse(account);
                 }
-                catch (ConcurrencyConflictException) when (attempt < MaxRetries)
+                catch (ConcurrencyConflictException) when (attempt < MaxRetries && !ct.IsCancellationRequested)
                 {
                     await Task.Delay(20 * attempt, ct);
                 }

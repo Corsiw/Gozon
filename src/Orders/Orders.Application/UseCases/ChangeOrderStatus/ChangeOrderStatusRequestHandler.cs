@@ -1,6 +1,4 @@
-using Domain.Entities;
 using Orders.Application.Interfaces;
-using Orders.Application.UseCases.GetOrderStatusById;
 
 namespace Orders.Application.UseCases.ChangeOrderStatus
 {

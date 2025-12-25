@@ -25,7 +25,8 @@ namespace Infrastructure.Data
                     .IsRequired();
 
                 entity.Property(o => o.Amount)
-                    .IsRequired();
+                    .IsRequired()
+                    .HasPrecision(18, 2);
 
                 entity.Property(o => o.Version)
                     .IsRequired()

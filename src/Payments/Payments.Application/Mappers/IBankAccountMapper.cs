@@ -2,7 +2,6 @@ using Domain.Entities;
 using Payments.Application.UseCases.AddBankAccount;
 using Payments.Application.UseCases.CreditBankAccount;
 using Payments.Application.UseCases.GetBalanceByUserId;
-using Payments.Application.UseCases.ProcessOrder;
 
 namespace Payments.Application.Mappers
 {

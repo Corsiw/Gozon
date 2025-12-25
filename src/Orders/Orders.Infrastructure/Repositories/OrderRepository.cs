@@ -2,8 +2,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Orders.Application.Exceptions;
 using Orders.Application.Interfaces;
-using Payments.Application.Exceptions;
 
 namespace Infrastructure.Repositories
 {

@@ -1,8 +1,8 @@
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Orders.Application.Events;
+using Orders.Application.Exceptions;
 using Orders.Application.Interfaces;
-using Payments.Application.Exceptions;
 
 namespace Infrastructure.Repositories
 {

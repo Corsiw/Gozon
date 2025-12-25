@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace Orders.Application.Events
 {
     public sealed record OrderCreatedEvent(

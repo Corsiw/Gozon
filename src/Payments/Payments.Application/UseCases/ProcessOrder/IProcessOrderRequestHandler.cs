@@ -1,5 +1,4 @@
 using Domain.Enums;
-using Payments.Application.UseCases.CreditBankAccount;
 
 namespace Payments.Application.UseCases.ProcessOrder
 {
